@@ -1,0 +1,131 @@
+
+import React, { useState, useEffect } from 'react';
+import { Card } from 'primereact/card';
+import { InputText } from 'primereact/inputtext';
+import { Checkbox } from 'primereact/checkbox';
+import { Button } from 'primereact/button';
+import './loginpage.css';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+export default function LoginCard() {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [LoginStatus, SetLoginStatus] = useState('');
+    const [ValidationMessage, setValidationMessage] = useState('');
+    const [checked, setChecked] = useState(false);
+    const [ErrorMessage, setErrorMessage] = useState("");
+    const[userData,setUserData]=useState([]);
+    const navigate = useNavigate();
+    const regex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,8}(.[a-z]{2,8}])?/g;
+    const emailValidation = (e) => {
+        let email1 = e.target.value;
+        if (regex.test(email1)) {
+
+            setValidationMessage("");
+        } else {
+            setValidationMessage("Please follow correct format for email")
+
+        }
+        setEmail(email1);
+    }
+    const handleLogin = async () => {
+
+        axios.get(`http://localhost:8081/user/login/${email}/${password}`)
+            .then((response) => {
+                console.log(response.data);
+                SetLoginStatus(response.data);
+            }
+            ).catch((error) => {
+                console.error(error)
+                SetLoginStatus(error.message);
+            })
+    };
+    const HandleLoginStatus = () => {
+        if (LoginStatus === "Login Successful") {
+            navigate('/Landing');
+        } else if (LoginStatus === 'Incorrect Credentials') {
+            setErrorMessage("Incorrect Credentials");
+        } else if (LoginStatus === 'User Not Found') {
+            setErrorMessage("User Not Found");
+        }
+    };
+    console.log(`http://localhost:8081/getdetails/${email}`)
+    useEffect(() => {
+        HandleLoginStatus();
+    }, [LoginStatus]);
+    const getuserdetails=async()=>{
+        try {
+            console.log(`Fetching user details for email: ${email}`);
+            const response = await axios.get(`http://localhost:8081/user/getdetails/${email}`);
+            console.log('User details response:', response.data);
+            setUserData(response.data);
+            localStorage.setItem('userData', JSON.stringify(response.data));
+        } catch (error) {
+            console.error('Error fetching user details:', error);
+        }
+    }
+    console.log(userData)
+    useEffect(()=>{
+        getuserdetails();
+    },[email]);
+    return (
+        <div className="flex justify-center items-center h-screen Login">
+            <Card className="flex justify-center items-center size-fit  rounded-md bg-custom-opacity" >
+                <div className="flex flex-col w-full">
+                    <div className='flex flex-col gap-8'>
+                        <div className='text-center text-black text-3xl font-bold'>
+                            <h1>Login</h1>
+                        </div>
+                        <div className=" flex flex-col justify-center">
+                            <span className="p-float-label">
+                                <InputText id="Email" value={email} onChange={emailValidation} className="border rounded p-2 w-72 bg-custom-opacity" />
+                                <label htmlFor="email">Email</label>
+
+                            </span>
+                            <a className='text-red-500'>{ValidationMessage}</a>
+                        </div>
+                        <div className=" flex justify-center">
+                            <span className="p-float-label">
+                                <InputText id="Password" type='password' value={password} onChange={(event) => { setPassword(event.target.value) }} className="border rounded p-2 w-72 bg-custom-opacity" />
+                                <label htmlFor="Password">Password</label>
+                            </span>
+                        </div>
+
+                    </div>
+                    <div className='text-end'>
+                        <a className='underline underline-offset-1 text-sm text-blue-800'>forget password?</a>
+                    </div>
+                    <div className='flex flex-col gap-3'>
+                        <div className="flex items-center pr-20">
+                            <Checkbox onChange={e => setChecked(e.checked)} checked={checked} className='border rounded bg-custom-opacity'></Checkbox>
+                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                                Remember me
+                            </label>
+                        </div>
+
+
+                        <div className='text-center items-center flex flex-col gap-2 justify-center'>
+                            <p className='text-red-700'>{ErrorMessage}</p>
+                            {email && password ? (
+                                <Button label='Submit' className='border  text-white rounded-md  p-1 w-20 bg-blue-800' onClick={handleLogin} />
+                            ) : (
+                                <Button label='Submit' disabled className='border  text-white rounded-md  p-1 w-20 bg-blue-800' onClick={handleLogin} />
+
+                            )}
+
+                            <div className='text-center flex flex-row items-center gap-2 justify-center'>
+                                <p className='text-sm text-gray-900'>New User?</p>
+                                <a href='/signin' className='text-sm underline underline-offset-1 text-blue-800'>Signup</a>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </Card>
+        </div>
+
+    );
+}
+
